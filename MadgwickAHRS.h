@@ -10,7 +10,7 @@
 #ifndef MADGWICK_AHRS_H
 #define MADGWICK_AHRS_H
 
-#include "AHRSCommon.h"
+#include "../AHRS/AHRSCommon.h"
 
 class MadgwickAHRS {
 public:
