@@ -1,3 +1,10 @@
+/*
+ * Name: MadgwickAHRS.cpp
+ * Use: Implementation of the Madgwick AHRS attitude filter.
+ * Version: 4.0.0
+ * Created by: Durvesh Pathak dp676@cornell.edu
+ */
+
 #include "MadgwickAHRS.h"
 
 MadgwickAHRS::MadgwickAHRS()

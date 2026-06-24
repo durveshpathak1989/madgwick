@@ -1,4 +1,11 @@
 /*
+ * Name: MadgwickAHRS.h
+ * Use: Declaration for the Madgwick AHRS attitude filter.
+ * Version: 4.0.0
+ * Created by: Durvesh Pathak dp676@cornell.edu
+ */
+
+/*
   MadgwickAHRS.h
   Standalone Madgwick IMU/AHRS estimator for Test_Quad.
 
