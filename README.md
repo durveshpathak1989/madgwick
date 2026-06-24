@@ -1,81 +1,50 @@
-# Standalone Madgwick AHRS
+# Test Quad MadgwickAHRS Library
 
-## Purpose
+This standalone repository provides the `MadgwickAHRS` estimator. It shares `AHRSInput` and `AttitudeEstimate` with the other attitude filters.
 
-A standalone Madgwick AHRS implementation used for runtime estimator comparison and fallback testing.
+## Pin Map
 
-## Files
+Madgwick does not use pins directly. It consumes IMU data:
 
-- `MadgwickAHRS.h/.cpp`: Madgwick update, quaternion state, beta tuning, and IMU update path.
+| Signal | ESP32 pin | Notes |
+| --- | ---: | --- |
+| SPI SCK | GPIO 5 | MPU-9250/MPU-6500 clock |
+| SPI MISO | GPIO 19 | MPU data to ESP32 |
+| SPI MOSI | GPIO 18 | ESP32 data to MPU |
+| MPU CS | GPIO 33 | Chip select passed to `MPU9250 imu(PIN_MPU_CS)` |
+| MPU INT | GPIO 27 | Optional data-ready interrupt; current firmware does not require it |
+| Motor FL | GPIO 25 | Front-left ESC signal |
+| Motor FR | GPIO 15 | Front-right ESC signal |
+| Motor RL | GPIO 14 | Rear-left ESC signal |
+| Motor RR | GPIO 32 | Rear-right ESC signal |
+| iBUS RX | GPIO 16 | FS-iA6B iBUS TX into ESP32 UART2 RX |
+| iBUS TX | GPIO 4 | Spare UART TX; avoids GPIO17 GPS conflict |
+| I2C SDA | GPIO 21 | BMP280 and VL53L4CX ToF bus |
+| I2C SCL | GPIO 22 | BMP280 and VL53L4CX ToF bus |
+| GPS RX | GPIO 13 | GPS TXD into ESP32 UART1 RX |
+| GPS TX | GPIO 17 | Optional GPS RXD from ESP32 UART1 TX |
 
-## Quick Start
+
+## Main INO Integration Example
 
 ```cpp
 #include "MadgwickAHRS.h"
 
-MadgwickAHRS madgwick;
+MadgwickAHRS madgwickAHRS;
 
 void setup() {
-    madgwick.setBeta(0.08f);
+    madgwickAHRS.setBeta(0.08f);
 }
 
 void loop() {
-    AHRSInput in{};
-    AttitudeEstimate out{};
-    madgwick.update(in, 0.0025f, out);
+    AHRSInput in;
+    AttitudeEstimate att;
+    // Fill in from MPU_SensorData.
+    madgwickAHRS.update(in, 0.0025f, att);
 }
 ```
 
-## How It Fits Into The Flight Controller
 
-This library lives under `Submodules/Madgwick` in the main `Test_Quad` firmware
-and is built as an Arduino library by adding `Submodules/` to the Arduino
-library search path. The main firmware includes it directly from
-`RC_FlightController.ino` or from another support module.
+## Why These Data Types
 
-The flight controller runs a 400 Hz control loop on ESP32, so this library
-should avoid heap allocation, long blocking calls, and unbounded Serial output
-inside flight-critical paths. Debug output should use `DebugConfig.h` macros
-where available so `VERBOSE_ON=0` builds can compile prints out.
-
-## Data Type Choices
-
-- `float beta`: The filter gain is a continuous tuning value and is cheap to update as a float.
-- Quaternion floats: Quaternion state avoids Euler singularities during integration.
-- `AHRSInput`: Keeps this implementation swappable with EKF and Mahony paths.
-
-## Usage Guidance
-
-1. Initialize hardware-facing classes once during `setup()`.
-2. Keep update/read calls deterministic when used from a FreeRTOS task.
-3. Prefer explicit validity flags over sentinel numeric values.
-4. Keep units visible in field names, such as `_dps`, `_g`, `_uT`, `_m`, or `_us`.
-5. When adding telemetry fields, update both the packet struct and JSON serializer.
-
-## Example Build Integration
-
-```bash
-arduino-cli compile \
-  --fqbn esp32:esp32:esp32:UploadSpeed=921600,CPUFreq=240,FlashFreq=80,FlashMode=qio,FlashSize=4M,PartitionScheme=min_spiffs,DebugLevel=none,PSRAM=disabled,LoopCore=1,EventsCore=1,EraseFlash=none,JTAGAdapter=default,ZigbeeMode=default \
-  --libraries ./Submodules \
-  .
-```
-
-For quiet flight builds:
-
-```bash
-arduino-cli compile ... --build-property compiler.cpp.extra_flags=-DVERBOSE_ON=0
-```
-
-
-## Integration Notes
-
-In the main flight-controller sketch, this library is included through Arduino's
-library search path. When this folder is converted to a git submodule, keep the
-folder name stable under `Submodules/` so includes such as `#include "..."`
-continue to resolve.
-
-Most examples below are intentionally small. On the real flight controller,
-objects are usually constructed globally, initialized once from `setup()`, and
-then called from FreeRTOS tasks at deterministic rates.
-
+The beta gain and quaternion state are `float` because the update is math-heavy and runs in the high-rate control loop. `AHRSInput` makes unit expectations explicit at the API boundary.
