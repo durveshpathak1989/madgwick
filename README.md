@@ -1,5 +1,9 @@
 # Test Quad MadgwickAHRS Library
 
+## Explain It Simply
+
+This module is another way to estimate drone attitude from motion sensor data. It is kept as a separate reference version so it can be studied by itself.
+
 This standalone repository provides the `MadgwickAHRS` estimator. It shares `AHRSInput` and `AttitudeEstimate` with the other attitude filters.
 
 ## Pin Map
